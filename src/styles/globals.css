@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Neobrutalism Base Styles ─────────────────────────────────────────────── */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-gray-neo text-dark font-sans antialiased;
+    min-width: 320px;
+  }
+
+  /* Remove default border-radius everywhere — Neobrutalism uses sharp corners */
+  button,
+  input,
+  select,
+  textarea {
+    border-radius: 0 !important;
+  }
+
+  /* Focus ring — visible and bold */
+  :focus-visible {
+    @apply outline-none ring-2 ring-dark ring-offset-2;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold leading-tight;
+  }
+}
+
+/* ─── Neobrutalism Component Utilities ──────────────────────────────────────── */
+
+@layer components {
+  /* Card */
+  .neo-card {
+    @apply bg-light border-neo-thick border-dark shadow-neo p-4;
+  }
+
+  /* Button base */
+  .neo-btn {
+    @apply inline-flex items-center justify-center gap-2
+           border-neo-thick border-dark font-bold
+           px-4 py-2 cursor-pointer select-none
+           transition-all duration-100
+           active:translate-x-[2px] active:translate-y-[2px] active:shadow-none;
+  }
+
+  .neo-btn:hover {
+    @apply translate-x-[2px] translate-y-[2px] shadow-none;
+  }
+
+  .neo-btn-primary {
+    @apply neo-btn bg-primary shadow-neo;
+  }
+
+  .neo-btn-danger {
+    @apply neo-btn bg-danger text-light shadow-neo;
+  }
+
+  .neo-btn-outline {
+    @apply neo-btn bg-light shadow-neo;
+  }
+
+  /* Input */
+  .neo-input {
+    @apply w-full border-neo-thick border-dark bg-light px-3 py-2
+           focus:outline-none focus:shadow-neo
+           placeholder:text-gray-400;
+  }
+
+  .neo-input-error {
+    @apply neo-input border-danger;
+  }
+
+  /* Badge */
+  .neo-badge {
+    @apply inline-flex items-center px-2 py-0.5
+           border-neo border-dark font-bold text-xs uppercase tracking-wide;
+  }
+
+  .neo-badge-income {
+    @apply neo-badge bg-success text-light;
+  }
+
+  .neo-badge-expense {
+    @apply neo-badge bg-danger text-light;
+  }
+}
+
+/* ─── Scrollbar Styling ─────────────────────────────────────────────────────── */
+
+@layer utilities {
+  .scrollbar-neo::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-neo::-webkit-scrollbar-track {
+    @apply bg-gray-neo border-l-2 border-dark;
+  }
+
+  .scrollbar-neo::-webkit-scrollbar-thumb {
+    @apply bg-dark;
+  }
+}
