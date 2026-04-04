@@ -1,2 +1,1 @@
-// Category page — will be implemented in task 5.2.
-export {}
+export { default as CategoryPage } from './CategoryPage'

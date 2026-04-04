@@ -1,2 +1,2 @@
-// Auth pages — will be implemented in task 3.4.
-export {}
+export { default as LoginPage } from './LoginPage'
+export { default as RegisterPage } from './RegisterPage'

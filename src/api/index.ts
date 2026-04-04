@@ -1,2 +1,3 @@
-// API module — exports will be added in subsequent tasks.
-export {}
+export { default as axiosInstance } from './axiosInstance'
+export { authApi } from './auth'
+export * from './categories'
