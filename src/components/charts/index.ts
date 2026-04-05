@@ -1,2 +1,3 @@
-// Chart components — will be implemented in task 9.2.
-export {}
+export { MonthlyChart } from './MonthlyChart'
+export { CategoryPieChart } from './CategoryPieChart'
+

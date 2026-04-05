@@ -3,9 +3,9 @@ import { AuthProvider } from './contexts/AuthContext'
 import { LoginPage, RegisterPage } from './pages/auth'
 import { CategoryPage } from './pages/categories'
 import { TransactionListPage, TransactionFormPage } from './pages/transactions'
+import { DashboardPage } from './pages/dashboard'
 
 // Placeholder page components — will be replaced with real implementations in later tasks.
-const DashboardPage = () => <div className="p-8 text-center font-bold text-2xl">Dashboard</div>
 const BudgetPage = () => <div className="p-8 text-center font-bold text-2xl">Budgets</div>
 
 // Placeholder ProtectedRoute — will be replaced with real auth guard in task 10.2.
