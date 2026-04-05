@@ -11,13 +11,24 @@ import { BudgetPage } from './pages/budgets'
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   return (
     <div className="min-h-screen bg-gray-neo">
       <Navbar onMenuToggle={() => setSidebarOpen((v) => !v)} />
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        open={sidebarOpen}
+        collapsed={sidebarCollapsed}
+        onClose={() => setSidebarOpen(false)}
+        onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+      />
       {/* Main content — offset by sidebar width on large screens */}
-      <main className="lg:ml-56 min-h-[calc(100vh-3.5rem)]">
+      <main
+        className={[
+          'min-h-[calc(100vh-3.5rem)] transition-all duration-200',
+          sidebarCollapsed ? 'lg:ml-14' : 'lg:ml-56',
+        ].join(' ')}
+      >
         {children}
       </main>
     </div>

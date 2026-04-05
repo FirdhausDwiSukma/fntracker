@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Menu } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import Button from '../ui/Button'
 
@@ -18,9 +19,9 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
             <button
               onClick={onMenuToggle}
               aria-label="Toggle menu"
-              className="lg:hidden border-neo-thick border-dark bg-light w-9 h-9 flex items-center justify-center font-black text-lg hover:bg-gray-neo transition-colors"
+              className="lg:hidden border-neo-thick border-dark bg-light w-9 h-9 flex items-center justify-center hover:bg-gray-neo transition-colors"
             >
-              ☰
+              <Menu size={18} strokeWidth={2.5} />
             </button>
           )}
           <Link to="/dashboard" className="font-black text-lg tracking-tight">

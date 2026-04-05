@@ -14,6 +14,18 @@ interface TransactionRequest {
   date: string // YYYY-MM-DD
 }
 
+function mapTransaction(raw: any): Transaction {
+  return {
+    id: raw.id,
+    categoryId: raw.category_id,
+    categoryName: raw.category_name,
+    amount: raw.amount,
+    type: raw.type,
+    description: raw.description ?? '',
+    date: raw.date,
+  }
+}
+
 export const getTransactions = (filter: TransactionFilter): Promise<TransactionListResponse> => {
   const params: Record<string, string | number | undefined> = {}
   if (filter.type) params.type = filter.type
@@ -26,19 +38,25 @@ export const getTransactions = (filter: TransactionFilter): Promise<TransactionL
   if (filter.limit) params.limit = filter.limit
 
   return axiosInstance
-    .get<TransactionListResponse>('/transactions', { params })
-    .then((r) => r.data)
+    .get<any>('/transactions', { params })
+    .then((r) => ({
+      data: (r.data.data ?? []).map(mapTransaction),
+      total: r.data.total,
+      page: r.data.page,
+      limit: r.data.limit,
+      total_pages: r.data.total_pages,
+    }))
 }
 
 export const createTransaction = (data: TransactionRequest): Promise<Transaction> =>
   axiosInstance
-    .post<ApiResponse<Transaction>>('/transactions', data)
-    .then((r) => r.data.data)
+    .post<ApiResponse<any>>('/transactions', data)
+    .then((r) => mapTransaction(r.data.data))
 
 export const updateTransaction = (id: number, data: TransactionRequest): Promise<Transaction> =>
   axiosInstance
-    .put<ApiResponse<Transaction>>(`/transactions/${id}`, data)
-    .then((r) => r.data.data)
+    .put<ApiResponse<any>>(`/transactions/${id}`, data)
+    .then((r) => mapTransaction(r.data.data))
 
 export const deleteTransaction = (id: number): Promise<void> =>
   axiosInstance.delete<ApiResponse<null>>(`/transactions/${id}`).then(() => undefined)
