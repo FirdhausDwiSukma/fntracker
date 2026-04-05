@@ -1,2 +1,2 @@
-// Transaction pages — will be implemented in task 6.2.
-export {}
+export { default as TransactionListPage } from './TransactionListPage'
+export { default as TransactionFormPage } from './TransactionFormPage'
