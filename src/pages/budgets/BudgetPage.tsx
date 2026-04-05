@@ -4,6 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useBudgets } from '../../hooks/useBudgets'
 import { useCategories } from '../../hooks/useCategories'
+import { useToast } from '../../components/ui/Toast'
+import Button from '../../components/ui/Button'
+import Input from '../../components/ui/Input'
+import Card from '../../components/ui/Card'
+import Modal from '../../components/ui/Modal'
+import ProgressBar from '../../components/ui/ProgressBar'
+import Badge from '../../components/ui/Badge'
 import type { Budget } from '../../types/budget'
 
 const currentDate = new Date()
@@ -24,40 +31,20 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
-function ProgressBar({ percentage }: { percentage: number }) {
-  const clamped = Math.min(percentage, 100)
-  const color =
-    percentage >= 100 ? 'bg-[#EF4444]' : percentage >= 80 ? 'bg-[#FACC15]' : 'bg-[#22C55E]'
-
-  return (
-    <div className="w-full bg-[#F5F5F5] border-2 border-black h-5 relative">
-      <div
-        className={`${color} h-full transition-all`}
-        style={{ width: `${clamped}%` }}
-      />
-      <span className="absolute inset-0 flex items-center justify-center text-xs font-black">
-        {percentage.toFixed(1)}%
-      </span>
-    </div>
-  )
-}
+const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
 
 export default function BudgetPage() {
   const [filterMonth, setFilterMonth] = useState(currentMonth)
   const [filterYear, setFilterYear] = useState(currentYear)
 
-  const { budgets, isLoading, isError, createBudget, updateBudget, deleteBudget } = useBudgets(
-    filterMonth,
-    filterYear,
-  )
+  const { budgets, isLoading, isError, createBudget, updateBudget, deleteBudget } = useBudgets(filterMonth, filterYear)
   const { categories } = useCategories()
+  const { toast } = useToast()
   const expenseCategories = categories.filter((c) => c.type === 'expense')
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [toastMsg, setToastMsg] = useState<string | null>(null)
-  const [toastType, setToastType] = useState<'success' | 'warning' | 'error'>('success')
+  const [deleteTarget, setDeleteTarget] = useState<Budget | null>(null)
 
   const {
     register,
@@ -66,118 +53,74 @@ export default function BudgetPage() {
     formState: { errors, isSubmitting },
   } = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetSchema),
-    defaultValues: {
-      category_id: 0,
-      limit_amount: 0,
-      month: filterMonth,
-      year: filterYear,
-    },
+    defaultValues: { category_id: 0, limit_amount: 0, month: filterMonth, year: filterYear },
   })
-
-  function showToast(msg: string, type: 'success' | 'warning' | 'error' = 'success') {
-    setToastMsg(msg)
-    setToastType(type)
-    setTimeout(() => setToastMsg(null), 4000)
-  }
 
   function openAdd() {
     setEditingId(null)
     reset({ category_id: 0, limit_amount: 0, month: filterMonth, year: filterYear })
     setShowForm(true)
-    setErrorMsg(null)
   }
 
   function openEdit(b: Budget) {
     setEditingId(b.id)
-    reset({
-      category_id: b.categoryId,
-      limit_amount: b.limitAmount,
-      month: b.month,
-      year: b.year,
-    })
+    reset({ category_id: b.categoryId, limit_amount: b.limitAmount, month: b.month, year: b.year })
     setShowForm(true)
-    setErrorMsg(null)
   }
 
   function closeForm() {
     setShowForm(false)
     setEditingId(null)
-    setErrorMsg(null)
   }
 
   async function onSubmit(values: BudgetFormValues) {
-    setErrorMsg(null)
     try {
       if (editingId !== null) {
         await updateBudget.mutateAsync({ id: editingId, data: values })
-        showToast('Budget updated successfully')
+        toast('Budget updated successfully')
       } else {
         await createBudget.mutateAsync(values)
-        showToast('Budget created successfully')
+        toast('Budget created successfully')
       }
       closeForm()
     } catch {
-      setErrorMsg('Something went wrong. Please try again.')
+      toast('Something went wrong. Please try again.', 'error')
     }
   }
 
-  async function handleDelete(b: Budget) {
-    if (!window.confirm(`Delete budget for "${b.categoryName}"?`)) return
+  async function confirmDelete() {
+    if (!deleteTarget) return
     try {
-      await deleteBudget.mutateAsync(b.id)
-      showToast('Budget deleted')
+      await deleteBudget.mutateAsync(deleteTarget.id)
+      toast('Budget deleted')
     } catch {
-      showToast('Failed to delete budget.', 'error')
+      toast('Failed to delete budget.', 'error')
+    } finally {
+      setDeleteTarget(null)
     }
   }
 
-  // Show warning/exceeded toasts when budgets load
   const warningBudgets = budgets.filter((b) => b.warning && !b.exceeded)
   const exceededBudgets = budgets.filter((b) => b.exceeded)
 
-  const toastBgClass =
-    toastType === 'error'
-      ? 'bg-[#EF4444]'
-      : toastType === 'warning'
-        ? 'bg-[#FACC15] text-black'
-        : 'bg-[#22C55E]'
-
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
-
   return (
-    <div className="min-h-screen bg-[#F5F5F5] p-6">
+    <div className="p-6">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-black tracking-tight">Budget Tracker</h1>
-          <button
-            onClick={openAdd}
-            className="bg-[#FACC15] border-2 border-black shadow-[4px_4px_0px_#000] px-4 py-2 font-bold text-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] transition-all"
-          >
-            + Add Budget
-          </button>
+          <Button onClick={openAdd}>+ Add Budget</Button>
         </div>
 
-        {/* Toast */}
-        {toastMsg && (
-          <div
-            className={`mb-4 ${toastBgClass} border-2 border-black shadow-[4px_4px_0px_#000] px-4 py-3 font-bold text-white`}
-          >
-            {toastMsg}
-          </div>
-        )}
-
-        {/* Budget status alerts */}
+        {/* Budget alerts */}
         {exceededBudgets.length > 0 && (
-          <div className="mb-4 bg-[#EF4444] border-2 border-black shadow-[4px_4px_0px_#000] px-4 py-3 font-bold text-white">
-            ⚠ Budget exceeded:{' '}
-            {exceededBudgets.map((b) => b.categoryName).join(', ')}
+          <div className="mb-4 bg-danger border-neo-thick border-dark shadow-neo px-4 py-3 font-bold text-light">
+            ⚠ Budget exceeded: {exceededBudgets.map((b) => b.categoryName).join(', ')}
           </div>
         )}
         {warningBudgets.length > 0 && (
-          <div className="mb-4 bg-[#FACC15] border-2 border-black shadow-[4px_4px_0px_#000] px-4 py-3 font-black text-black">
-            ⚡ Approaching limit:{' '}
-            {warningBudgets.map((b) => b.categoryName).join(', ')}
+          <div className="mb-4 bg-primary border-neo-thick border-dark shadow-neo px-4 py-3 font-black text-dark">
+            ⚡ Approaching limit: {warningBudgets.map((b) => b.categoryName).join(', ')}
           </div>
         )}
 
@@ -186,193 +129,144 @@ export default function BudgetPage() {
           <select
             value={filterMonth}
             onChange={(e) => setFilterMonth(Number(e.target.value))}
-            className="border-2 border-black px-3 py-2 font-medium bg-white focus:outline-none shadow-[2px_2px_0px_#000]"
+            className="border-neo-thick border-dark px-3 py-2 font-medium bg-light focus:outline-none shadow-neo-sm"
           >
             {MONTH_NAMES.map((name, i) => (
-              <option key={i + 1} value={i + 1}>
-                {name}
-              </option>
+              <option key={i + 1} value={i + 1}>{name}</option>
             ))}
           </select>
           <select
             value={filterYear}
             onChange={(e) => setFilterYear(Number(e.target.value))}
-            className="border-2 border-black px-3 py-2 font-medium bg-white focus:outline-none shadow-[2px_2px_0px_#000]"
+            className="border-neo-thick border-dark px-3 py-2 font-medium bg-light focus:outline-none shadow-neo-sm"
           >
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
+            {years.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
 
-        {/* Add/Edit Form */}
-        {showForm && (
-          <div className="mb-6 bg-white border-2 border-black shadow-[4px_4px_0px_#000] p-5">
-            <h2 className="text-lg font-black mb-4">
-              {editingId !== null ? 'Edit Budget' : 'Add Budget'}
-            </h2>
-            {errorMsg && (
-              <div className="mb-3 bg-[#EF4444] border-2 border-black px-3 py-2 text-white font-bold text-sm">
-                {errorMsg}
-              </div>
-            )}
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-              <div>
-                <label className="block font-bold text-sm mb-1">Category (expense)</label>
+        {/* Add/Edit Modal */}
+        <Modal
+          open={showForm}
+          onClose={closeForm}
+          title={editingId !== null ? 'Edit Budget' : 'Add Budget'}
+        >
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="font-bold text-sm">Category (expense)</label>
+              <select
+                {...register('category_id')}
+                className="w-full border-neo-thick border-dark px-3 py-2 font-medium bg-light focus:outline-none focus:shadow-neo"
+              >
+                <option value={0}>Select a category</option>
+                {expenseCategories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {errors.category_id && (
+                <p className="text-danger text-sm font-bold">{errors.category_id.message}</p>
+              )}
+            </div>
+
+            <Input
+              label="Limit Amount"
+              type="number"
+              step="0.01"
+              min="0.01"
+              placeholder="e.g. 500000"
+              error={errors.limit_amount?.message}
+              {...register('limit_amount')}
+            />
+
+            <div className="flex gap-3">
+              <div className="flex-1 flex flex-col gap-1">
+                <label className="font-bold text-sm">Month</label>
                 <select
-                  {...register('category_id')}
-                  className="w-full border-2 border-black px-3 py-2 font-medium bg-white focus:outline-none focus:shadow-[4px_4px_0px_#000]"
+                  {...register('month')}
+                  className="w-full border-neo-thick border-dark px-3 py-2 font-medium bg-light focus:outline-none"
                 >
-                  <option value={0}>Select a category</option>
-                  {expenseCategories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
+                  {MONTH_NAMES.map((name, i) => (
+                    <option key={i + 1} value={i + 1}>{name}</option>
                   ))}
                 </select>
-                {errors.category_id && (
-                  <p className="text-[#EF4444] text-sm font-bold mt-1">
-                    {errors.category_id.message}
-                  </p>
-                )}
               </div>
-
-              <div>
-                <label className="block font-bold text-sm mb-1">Limit Amount</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  {...register('limit_amount')}
-                  placeholder="e.g. 500000"
-                  className="w-full border-2 border-black px-3 py-2 font-medium focus:outline-none focus:shadow-[4px_4px_0px_#000]"
-                />
-                {errors.limit_amount && (
-                  <p className="text-[#EF4444] text-sm font-bold mt-1">
-                    {errors.limit_amount.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="block font-bold text-sm mb-1">Month</label>
-                  <select
-                    {...register('month')}
-                    className="w-full border-2 border-black px-3 py-2 font-medium bg-white focus:outline-none"
-                  >
-                    {MONTH_NAMES.map((name, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="block font-bold text-sm mb-1">Year</label>
-                  <select
-                    {...register('year')}
-                    className="w-full border-2 border-black px-3 py-2 font-medium bg-white focus:outline-none"
-                  >
-                    {years.map((y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-1">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="bg-[#FACC15] border-2 border-black shadow-[4px_4px_0px_#000] px-5 py-2 font-bold text-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] transition-all disabled:opacity-50"
+              <div className="flex-1 flex flex-col gap-1">
+                <label className="font-bold text-sm">Year</label>
+                <select
+                  {...register('year')}
+                  className="w-full border-neo-thick border-dark px-3 py-2 font-medium bg-light focus:outline-none"
                 >
-                  {isSubmitting ? 'Saving…' : editingId !== null ? 'Save Changes' : 'Create'}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeForm}
-                  className="bg-white border-2 border-black shadow-[4px_4px_0px_#000] px-5 py-2 font-bold text-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] transition-all"
-                >
-                  Cancel
-                </button>
+                  {years.map((y) => <option key={y} value={y}>{y}</option>)}
+                </select>
               </div>
-            </form>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <Button type="submit" loading={isSubmitting}>
+                {editingId !== null ? 'Save Changes' : 'Create'}
+              </Button>
+              <Button type="button" variant="outline" onClick={closeForm}>Cancel</Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Delete Confirm Modal */}
+        <Modal
+          open={deleteTarget !== null}
+          onClose={() => setDeleteTarget(null)}
+          title="Delete Budget"
+        >
+          <p className="font-medium mb-4">
+            Delete budget for <strong>"{deleteTarget?.categoryName}"</strong>? This cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="danger" onClick={confirmDelete} loading={deleteBudget.isPending}>Delete</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
           </div>
-        )}
+        </Modal>
 
         {/* Budget List */}
         <div className="flex flex-col gap-4">
           {isLoading ? (
-            <div className="bg-white border-2 border-black shadow-[4px_4px_0px_#000] p-8 text-center font-bold text-gray-500">
-              Loading budgets…
-            </div>
+            <Card>
+              <div className="p-4 text-center font-bold text-gray-500">Loading budgets…</div>
+            </Card>
           ) : isError ? (
-            <div className="bg-white border-2 border-black shadow-[4px_4px_0px_#000] p-8 text-center font-bold text-[#EF4444]">
-              Failed to load budgets.
-            </div>
+            <Card>
+              <div className="p-4 text-center font-bold text-danger">Failed to load budgets.</div>
+            </Card>
           ) : budgets.length === 0 ? (
-            <div className="bg-white border-2 border-black shadow-[4px_4px_0px_#000] p-8 text-center font-bold text-gray-500">
-              No budgets for {MONTH_NAMES[filterMonth - 1]} {filterYear}. Add one above.
-            </div>
+            <Card>
+              <div className="p-4 text-center font-bold text-gray-500">
+                No budgets for {MONTH_NAMES[filterMonth - 1]} {filterYear}. Add one above.
+              </div>
+            </Card>
           ) : (
             budgets.map((b) => (
-              <div
-                key={b.id}
-                className="bg-white border-2 border-black shadow-[4px_4px_0px_#000] p-4"
-              >
+              <Card key={b.id}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-black text-lg">{b.categoryName}</span>
-                      {b.exceeded && (
-                        <span className="bg-[#EF4444] text-white border-2 border-black px-2 py-0.5 text-xs font-black uppercase">
-                          Exceeded
-                        </span>
-                      )}
-                      {b.warning && !b.exceeded && (
-                        <span className="bg-[#FACC15] text-black border-2 border-black px-2 py-0.5 text-xs font-black uppercase">
-                          Warning
-                        </span>
-                      )}
+                      {b.exceeded && <Badge variant="exceeded" />}
+                      {b.warning && !b.exceeded && <Badge variant="warning" />}
                     </div>
                     <p className="text-sm font-medium text-gray-600 mt-0.5">
                       {MONTH_NAMES[b.month - 1]} {b.year}
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => openEdit(b)}
-                      className="bg-white border-2 border-black shadow-[2px_2px_0px_#000] px-3 py-1 text-xs font-bold hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(b)}
-                      disabled={deleteBudget.isPending}
-                      className="bg-[#EF4444] text-white border-2 border-black shadow-[2px_2px_0px_#000] px-3 py-1 text-xs font-bold hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-50"
-                    >
-                      Delete
-                    </button>
+                    <Button size="sm" variant="outline" onClick={() => openEdit(b)}>Edit</Button>
+                    <Button size="sm" variant="danger" onClick={() => setDeleteTarget(b)}>Delete</Button>
                   </div>
                 </div>
 
                 <ProgressBar percentage={b.percentage} />
 
                 <div className="flex justify-between mt-2 text-sm font-bold">
-                  <span>
-                    Used:{' '}
-                    <span className={b.exceeded ? 'text-[#EF4444]' : ''}>
-                      {b.usedAmount.toLocaleString()}
-                    </span>
-                  </span>
+                  <span>Used: <span className={b.exceeded ? 'text-danger' : ''}>{b.usedAmount.toLocaleString()}</span></span>
                   <span>Limit: {b.limitAmount.toLocaleString()}</span>
                 </div>
-              </div>
+              </Card>
             ))
           )}
         </div>

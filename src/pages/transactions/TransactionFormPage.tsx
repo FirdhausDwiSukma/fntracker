@@ -7,15 +7,15 @@ import { useQuery } from '@tanstack/react-query'
 import { useTransactions } from '../../hooks/useTransactions'
 import { useCategories } from '../../hooks/useCategories'
 import { getTransactions } from '../../api/transactions'
+import Button from '../../components/ui/Button'
+import Input from '../../components/ui/Input'
+import Card from '../../components/ui/Card'
 
 const transactionSchema = z.object({
   amount: z.coerce.number({ invalid_type_error: 'Amount must be a number' }).gt(0, 'Amount must be greater than 0'),
   type: z.enum(['income', 'expense'], { required_error: 'Type is required' }),
   category_id: z.coerce.number({ invalid_type_error: 'Category is required' }).gt(0, 'Category is required'),
-  date: z
-    .string()
-    .min(1, 'Date is required')
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  date: z.string().min(1, 'Date is required').regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   description: z.string().max(500, 'Description must be at most 500 characters').optional(),
 })
 
@@ -49,7 +49,6 @@ export default function TransactionFormPage() {
 
   const selectedType = watch('type')
 
-  // Fetch existing transaction in edit mode
   const { data: existingData, isLoading: isLoadingExisting } = useQuery({
     queryKey: ['transaction', id],
     queryFn: () => getTransactions({ page: 1, limit: 1 }).then((r) => r.data.find((t) => t.id === Number(id))),
@@ -68,7 +67,6 @@ export default function TransactionFormPage() {
     }
   }, [existingData, reset])
 
-  // When type changes, reset category_id
   useEffect(() => {
     setValue('category_id', 0 as unknown as number)
   }, [selectedType, setValue])
@@ -83,7 +81,6 @@ export default function TransactionFormPage() {
       date: values.date,
       description: values.description || undefined,
     }
-
     try {
       if (isEdit && id) {
         await updateTransaction.mutateAsync({ id: Number(id), data: payload })
@@ -92,7 +89,7 @@ export default function TransactionFormPage() {
       }
       navigate('/transactions')
     } catch {
-      // error handled below via mutation state
+      // error shown via mutation state below
     }
   }
 
@@ -100,129 +97,95 @@ export default function TransactionFormPage() {
 
   if (isEdit && isLoadingExisting) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5] p-6 flex items-center justify-center">
+      <div className="p-6 flex items-center justify-center">
         <p className="font-bold text-gray-500">Loading transaction…</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] p-6">
+    <div className="p-6">
       <div className="max-w-xl mx-auto">
-        {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-black tracking-tight">
             {isEdit ? 'Edit Transaction' : 'Add Transaction'}
           </h1>
         </div>
 
-        {/* Error banner */}
         {mutationError && (
-          <div className="mb-4 bg-[#EF4444] border-2 border-black shadow-[4px_4px_0px_#000] px-4 py-3 font-bold text-white">
+          <div className="mb-4 bg-danger border-neo-thick border-dark shadow-neo px-4 py-3 font-bold text-light">
             Something went wrong. Please try again.
           </div>
         )}
 
-        <div className="bg-white border-2 border-black shadow-[4px_4px_0px_#000] p-6">
+        <Card>
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            {/* Amount */}
-            <div>
-              <label className="block font-bold text-sm mb-1">Amount</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                {...register('amount')}
-                placeholder="e.g. 50000"
-                className="w-full border-2 border-black px-3 py-2 font-medium focus:outline-none focus:shadow-[4px_4px_0px_#000]"
-              />
-              {errors.amount && (
-                <p className="text-[#EF4444] text-sm font-bold mt-1">{errors.amount.message}</p>
-              )}
-            </div>
+            <Input
+              label="Amount"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="e.g. 50000"
+              error={errors.amount?.message}
+              {...register('amount')}
+            />
 
-            {/* Type */}
-            <div>
-              <label className="block font-bold text-sm mb-1">Type</label>
+            <div className="flex flex-col gap-1">
+              <label className="font-bold text-sm">Type</label>
               <select
                 {...register('type')}
-                className="w-full border-2 border-black px-3 py-2 font-medium bg-white focus:outline-none focus:shadow-[4px_4px_0px_#000]"
+                className="w-full border-neo-thick border-dark px-3 py-2 font-medium bg-light focus:outline-none focus:shadow-neo"
               >
                 <option value="expense">Expense</option>
                 <option value="income">Income</option>
               </select>
-              {errors.type && (
-                <p className="text-[#EF4444] text-sm font-bold mt-1">{errors.type.message}</p>
-              )}
+              {errors.type && <p className="text-danger text-sm font-bold">{errors.type.message}</p>}
             </div>
 
-            {/* Category */}
-            <div>
-              <label className="block font-bold text-sm mb-1">Category</label>
+            <div className="flex flex-col gap-1">
+              <label className="font-bold text-sm">Category</label>
               <select
                 {...register('category_id')}
-                className="w-full border-2 border-black px-3 py-2 font-medium bg-white focus:outline-none focus:shadow-[4px_4px_0px_#000]"
+                className="w-full border-neo-thick border-dark px-3 py-2 font-medium bg-light focus:outline-none focus:shadow-neo"
               >
                 <option value="">Select a category</option>
                 {filteredCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
-              {errors.category_id && (
-                <p className="text-[#EF4444] text-sm font-bold mt-1">{errors.category_id.message}</p>
-              )}
+              {errors.category_id && <p className="text-danger text-sm font-bold">{errors.category_id.message}</p>}
             </div>
 
-            {/* Date */}
-            <div>
-              <label className="block font-bold text-sm mb-1">Date</label>
-              <input
-                type="date"
-                {...register('date')}
-                className="w-full border-2 border-black px-3 py-2 font-medium focus:outline-none focus:shadow-[4px_4px_0px_#000]"
-              />
-              {errors.date && (
-                <p className="text-[#EF4444] text-sm font-bold mt-1">{errors.date.message}</p>
-              )}
-            </div>
+            <Input
+              label="Date"
+              type="date"
+              error={errors.date?.message}
+              {...register('date')}
+            />
 
-            {/* Description */}
-            <div>
-              <label className="block font-bold text-sm mb-1">
+            <div className="flex flex-col gap-1">
+              <label className="font-bold text-sm">
                 Description <span className="font-normal text-gray-500">(optional)</span>
               </label>
               <textarea
                 {...register('description')}
                 rows={3}
                 placeholder="e.g. Lunch at restaurant"
-                className="w-full border-2 border-black px-3 py-2 font-medium focus:outline-none focus:shadow-[4px_4px_0px_#000] resize-none"
+                className="w-full border-neo-thick border-dark px-3 py-2 font-medium bg-light focus:outline-none focus:shadow-neo resize-none"
               />
-              {errors.description && (
-                <p className="text-[#EF4444] text-sm font-bold mt-1">{errors.description.message}</p>
-              )}
+              {errors.description && <p className="text-danger text-sm font-bold">{errors.description.message}</p>}
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3 pt-1">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-[#FACC15] border-2 border-black shadow-[4px_4px_0px_#000] px-5 py-2 font-bold text-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] transition-all disabled:opacity-50"
-              >
-                {isSubmitting ? 'Saving…' : isEdit ? 'Save Changes' : 'Create'}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/transactions')}
-                className="bg-white border-2 border-black shadow-[4px_4px_0px_#000] px-5 py-2 font-bold text-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] transition-all"
-              >
+              <Button type="submit" loading={isSubmitting}>
+                {isEdit ? 'Save Changes' : 'Create'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => navigate('/transactions')}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   )

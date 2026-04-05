@@ -1,2 +1,3 @@
-// Layout components — will be implemented in task 10.2.
-export {}
+export { default as Navbar } from './Navbar'
+export { default as Sidebar } from './Sidebar'
+export { default as ProtectedRoute } from './ProtectedRoute'
