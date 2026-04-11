@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import { Menu } from 'lucide-react'
+import { Menu, Sun, Moon } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { useTheme } from '../../contexts/ThemeContext'
 import Button from '../ui/Button'
 
 interface NavbarProps {
@@ -9,6 +10,7 @@ interface NavbarProps {
 
 export default function Navbar({ onMenuToggle }: NavbarProps) {
   const { user, logout, isLogoutLoading } = useAuth()
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <header className="bg-primary border-b-neo-thick border-dark shadow-neo-sm sticky top-0 z-40">
@@ -29,8 +31,15 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
           </Link>
         </div>
 
-        {/* Right: user info + logout */}
+        {/* Right: theme toggle + user info + logout */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle dark mode"
+            className="border-neo-thick border-dark bg-light w-9 h-9 flex items-center justify-center hover:bg-gray-neo transition-colors"
+          >
+            {theme === 'dark' ? <Sun size={16} strokeWidth={2.5} /> : <Moon size={16} strokeWidth={2.5} />}
+          </button>
           {user && (
             <span className="hidden sm:block font-bold text-sm border-neo-thick border-dark bg-light px-3 py-1">
               {user.name}

@@ -21,6 +21,37 @@
     min-width: 320px;
   }
 
+  .dark body {
+    @apply bg-gray-900 text-white;
+  }
+
+  .dark .neo-card,
+  .dark .bg-light {
+    @apply bg-gray-800 text-white;
+  }
+
+  .dark .border-dark {
+    @apply border-gray-400;
+  }
+
+  .dark .shadow-neo {
+    box-shadow: 4px 4px 0px #9ca3af;
+  }
+
+  .dark .shadow-neo-sm {
+    box-shadow: 2px 2px 0px #9ca3af;
+  }
+
+  .dark .bg-gray-neo {
+    @apply bg-gray-900;
+  }
+
+  .dark select,
+  .dark input,
+  .dark textarea {
+    @apply bg-gray-800 text-white border-gray-400;
+  }
+
   /* Remove default border-radius everywhere — Neobrutalism uses sharp corners */
   button,
   input,

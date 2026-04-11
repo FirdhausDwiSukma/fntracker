@@ -26,6 +26,11 @@ function mapTransaction(raw: any): Transaction {
   }
 }
 
+export const getTransactionById = (id: number): Promise<Transaction> =>
+  axiosInstance
+    .get<ApiResponse<any>>(`/transactions/${id}`)
+    .then((r) => mapTransaction(r.data.data))
+
 export const getTransactions = (filter: TransactionFilter): Promise<TransactionListResponse> => {
   const params: Record<string, string | number | undefined> = {}
   if (filter.type) params.type = filter.type

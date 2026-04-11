@@ -14,6 +14,7 @@ export default {
         danger: '#EF4444',    // Red — errors, destructive actions
         'gray-neo': '#F5F5F5', // Light gray — subtle backgrounds
         success: '#22C55E',   // Green — success states
+        // Dark mode surface colors (Tailwind built-in gray-800/900 used directly)
       },
       boxShadow: {
         'neo-sm': '2px 2px 0px #000000',
